@@ -1,0 +1,12 @@
+
+fastapi==0.143.0
+uvicorn[standard]==0.54.0
+python-multipart
+ultralytics==8.4.174
+opencv-python-headless
+pandas==3.0.6
+numpy
+scikit-learn==1.9.1
+joblib==1.6.0
+Pillow==12.3.0
+PyYAML==6.0.3
