@@ -28,3 +28,4 @@ data/synthetic/*
 # OS
 .DS_Store
 Thumbs.db
+runs/
