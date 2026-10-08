@@ -9,101 +9,144 @@ from dashboard.utils import (
     run_root_cause,
     run_risk_predict
 )
+from dashboard.components.charts import (
+    create_defect_rate_chart,
+    create_defect_pareto_chart,
+    create_quality_trend_chart,
+    create_parameter_dist_chart
+)
+from dashboard.components.lottie import render_lottie_status
 
 # =============================================================================
 # PAGE 1: COMMAND CENTER
 # =============================================================================
 def render_command_center(df_process):
-    st.markdown('<div class="system-banner">🟢 CELLGUARD STATUS: AI QUALITY MONITORING ACTIVE</div>', unsafe_allow_html=True)
-    
     total_inspections = len(df_process) if not df_process.empty else 5000
     defect_count = len(df_process[df_process["defect_status"] == "Defect"]) if not df_process.empty else 0
     defect_rate = (defect_count / total_inspections * 100) if total_inspections > 0 else 0.0
+    yield_rate = 100.0 - defect_rate
     
     if not df_process.empty:
         high_risk_count = len(df_process[(df_process["current"] > 210) | (df_process["temperature"] > 100) | (df_process["pressure"] < 3.8)])
     else:
         high_risk_count = 0
+
+    st.markdown(f"""
+    <div class="system-banner-scada">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span class="live-dot-pulse"></span>
+            <span>CELLGUARD COMMAND CENTER — AI QUALITY MONITORING ACTIVE</span>
+        </div>
+        <div style="display:flex; gap:12px;">
+            <div class="hud-stat-pill">Yield: <b style="color:#10B981;">{yield_rate:.1f}%</b></div>
+            <div class="hud-stat-pill">Target Defect: <b style="color:#38BDF8;">&lt; 2.0%</b></div>
+            <div class="hud-stat-pill">Lines Active: <b style="color:#34D399;">4 / 4</b></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-label">Total Inspections</div>
-            <div class="metric-value">{total_inspections:,}</div>
+        <div class="metric-card-scada card-success">
+            <div class="metric-label-scada">Total Inspections</div>
+            <div class="metric-value-large">{total_inspections:,}</div>
+            <div class="metric-subtext">🟢 100% Automated QC Telemetry Scan</div>
         </div>
         """, unsafe_allow_html=True)
     with col2:
+        card_class = "card-alert" if defect_rate > 10 else "card-success"
+        val_color = "#EF4444" if defect_rate > 10 else "#34D399"
         st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-label">Defect Rate</div>
-            <div class="metric-value" style="color:{'#EF4444' if defect_rate > 10 else '#34D399'};">{defect_rate:.1f}%</div>
+        <div class="metric-card-scada {card_class}">
+            <div class="metric-label-scada">Defect Rate</div>
+            <div class="metric-value-large" style="color:{val_color};">{defect_rate:.1f}%</div>
+            <div class="metric-subtext">🎯 QC Target Benchmark: &lt; 2.0%</div>
         </div>
         """, unsafe_allow_html=True)
     with col3:
         st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-label">High Risk Batches</div>
-            <div class="metric-value" style="color:#F59E0B;">{high_risk_count:,}</div>
+        <div class="metric-card-scada card-warning">
+            <div class="metric-label-scada">High Risk Batches</div>
+            <div class="metric-value-large" style="color:#F59E0B;">{high_risk_count:,}</div>
+            <div class="metric-subtext">⚠️ Out-of-Spec Parameter Triggers</div>
         </div>
         """, unsafe_allow_html=True)
     with col4:
         st.markdown("""
-        <div class="metric-card">
-            <div class="metric-label">Active Machines</div>
-            <div class="metric-value" style="color:#38BDF8;">4</div>
+        <div class="metric-card-scada card-success">
+            <div class="metric-label-scada">Active Workstations</div>
+            <div class="metric-value-large" style="color:#38BDF8;">4 / 4</div>
+            <div class="metric-subtext">⚡ Laser Weld Lines Operational</div>
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("### ")
+    st.markdown("<br/>", unsafe_allow_html=True)
     
-    col_left, col_right = st.columns([1, 1])
+    st.markdown("#### 🏭 Machine Line Status & Operational Risk Board")
+    if not df_process.empty:
+        m_cols = st.columns(4)
+        m_ids = sorted(df_process["machine_id"].unique())
+        for idx, m_id in enumerate(m_ids):
+            m_df = df_process[df_process["machine_id"] == m_id]
+            m_total = len(m_df)
+            m_defects = len(m_df[m_df["defect_status"] == "Defect"])
+            m_rate = (m_defects / m_total * 100) if m_total > 0 else 0.0
+            health_pct = max(5.0, 100.0 - m_rate * 2.5)
+            
+            if m_rate > 18:
+                status_badge = '<span class="badge-critical">CRITICAL</span>'
+                bar_color = "#EF4444"
+            elif m_rate > 12:
+                status_badge = '<span class="badge-warning">WARNING</span>'
+                bar_color = "#F59E0B"
+            else:
+                status_badge = '<span class="badge-healthy">HEALTHY</span>'
+                bar_color = "#10B981"
+                
+            with m_cols[idx % 4]:
+                st.markdown(f"""
+                <div class="machine-card-hud">
+                    <div class="machine-card-header">
+                        <span class="machine-title">Workstation {m_id}</span>
+                        {status_badge}
+                    </div>
+                    <div style="font-size:12px; color:#CBD5E1; line-height:1.9;">
+                        Total Batches: <b style="float:right; color:#F8FAFC;">{m_total:,}</b><br/>
+                        Defect Count: <b style="float:right; color:#EF4444;">{m_defects:,}</b><br/>
+                        Defect Rate: <b style="float:right; color:{'#EF4444' if m_rate > 15 else ('#F59E0B' if m_rate > 10 else '#34D399')};">{m_rate:.1f}%</b>
+                    </div>
+                    <div class="machine-progress-track">
+                        <div class="machine-progress-fill" style="width:{health_pct:.1f}%; background-color:{bar_color};"></div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    st.markdown("<br/>", unsafe_allow_html=True)
+    
+    col_left, col_right = st.columns(2)
     
     with col_left:
-        st.markdown("#### 🏭 Machine Risk Board")
+        st.markdown("#### 📊 Defect Rate by Machine Workstation (Interactive Plotly)")
         if not df_process.empty:
-            m_summary = []
-            for m_id in sorted(df_process["machine_id"].unique()):
-                m_df = df_process[df_process["machine_id"] == m_id]
-                m_total = len(m_df)
-                m_defects = len(m_df[m_df["defect_status"] == "Defect"])
-                m_rate = (m_defects / m_total * 100) if m_total > 0 else 0
-                
-                if m_rate > 18:
-                    status_html = '<span class="badge-critical">CRITICAL</span>'
-                elif m_rate > 12:
-                    status_html = '<span class="badge-warning">WARNING</span>'
-                else:
-                    status_html = '<span class="badge-healthy">HEALTHY</span>'
-                    
-                m_summary.append({
-                    "Machine": m_id,
-                    "Total Batches": m_total,
-                    "Defect Count": m_defects,
-                    "Defect Rate": f"{m_rate:.1f}%",
-                    "Status": status_html
-                })
-            
-            m_df_display = pd.DataFrame(m_summary)
-            st.write(m_df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
-            
-            rates = df_process.groupby("machine_id")["defect_status"].apply(lambda s: (s == "Defect").mean() * 100)
-            st.markdown("<br/><b>Defect Rate by Machine (%)</b>", unsafe_allow_html=True)
-            st.bar_chart(rates)
+            fig_rates = create_defect_rate_chart(df_process)
+            st.plotly_chart(fig_rates, use_container_width=True)
         else:
             st.warning("No process telemetry dataset loaded.")
 
     with col_right:
-        st.markdown("#### 📊 Defect Distribution & Recent Telemetry")
+        st.markdown("#### 🔎 Weld Defect Pareto Breakdown (Interactive Plotly)")
         if not df_process.empty:
-            defect_counts = df_process[df_process["defect_type"] != "None"]["defect_type"].value_counts()
-            st.bar_chart(defect_counts)
-            
-            st.markdown("<b>Recent Process Telemetry Stream</b>", unsafe_allow_html=True)
-            st.dataframe(
-                df_process[["batch_id", "machine_id", "timestamp", "current", "temperature", "defect_status", "defect_type"]].tail(8),
-                use_container_width=True
-            )
+            fig_pareto = create_defect_pareto_chart(df_process)
+            st.plotly_chart(fig_pareto, use_container_width=True)
+        else:
+            st.warning("No process telemetry dataset loaded.")
+
+    st.markdown("<br/>", unsafe_allow_html=True)
+    st.markdown("#### ⚡ Real-Time Process Telemetry Stream & SCADA Alarm Log")
+    if not df_process.empty:
+        recent_df = df_process[["batch_id", "machine_id", "timestamp", "current", "temperature", "pressure", "defect_status", "defect_type"]].tail(10).copy()
+        st.dataframe(recent_df, use_container_width=True)
 
 # =============================================================================
 # PAGE 2: VISUAL INSPECTION
@@ -427,11 +470,9 @@ def render_quality_time_machine(df_process):
 
         col_t1, col_t2 = st.columns(2)
         with col_t1:
-            st.markdown("#### Quality Trend Over Time (Defects Count)")
-            df_filtered_copy = df_filtered.copy()
-            df_filtered_copy["batch_group"] = (np.arange(len(df_filtered_copy)) // 50) * 50
-            trend_df = df_filtered_copy.groupby("batch_group")["defect_status"].apply(lambda s: (s == "Defect").sum())
-            st.line_chart(trend_df)
+            st.markdown("#### Quality Trend Over Time (Interactive Line Chart)")
+            fig_trend = create_quality_trend_chart(df_filtered)
+            st.plotly_chart(fig_trend, use_container_width=True)
 
         with col_t2:
             st.markdown("#### Defect Type Distribution")
@@ -444,25 +485,8 @@ def render_quality_time_machine(df_process):
         st.markdown("#### Process Parameter Distribution (Normal vs Defect)")
         param_choice = st.selectbox("Select Parameter to Plot:", ["current", "voltage", "temperature", "pressure", "welding_time", "speed"])
         
-        fig, ax = plt.subplots(figsize=(10, 3.5))
-        fig.patch.set_facecolor('#1E293B')
-        ax.set_facecolor('#0F172A')
-        
-        normal_data = df_filtered[df_filtered["defect_status"] == "Normal"][param_choice]
-        defect_data = df_filtered[df_filtered["defect_status"] == "Defect"][param_choice]
-        
-        ax.hist(normal_data, bins=30, alpha=0.6, label="Normal Batches", color="#10B981")
-        ax.hist(defect_data, bins=30, alpha=0.7, label="Defect Batches", color="#EF4444")
-        
-        ax.set_title(f"Distribution of {param_choice.upper()} (Normal vs Defect)", color="#F8FAFC", fontsize=12)
-        ax.set_xlabel(param_choice.upper(), color="#94A3B8")
-        ax.set_ylabel("Frequency", color="#94A3B8")
-        ax.tick_params(colors="#94A3B8")
-        ax.legend(facecolor="#1E293B", edgecolor="#334155", labelcolor="#F8FAFC")
-        for spine in ax.spines.values():
-            spine.set_color('#334155')
-            
-        st.pyplot(fig)
+        fig_dist = create_parameter_dist_chart(df_filtered, param_choice)
+        st.plotly_chart(fig_dist, use_container_width=True)
     else:
         st.warning("Factory process dataset is not available.")
 

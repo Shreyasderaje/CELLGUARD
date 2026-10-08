@@ -9,3 +9,5 @@ matplotlib
 seaborn
 streamlit
 Pillow
+plotly
+streamlit-lottie

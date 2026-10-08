@@ -97,12 +97,20 @@ with st.sidebar:
 # HEADER COMPONENT
 # -----------------------------------------------------------------------------
 st.markdown("""
-<div class="cellguard-header">
-    <div class="cellguard-title">
-        ⚡ CELLGUARD <span style="font-size:16px; color:#94A3B8; font-weight:500;">| AI Quality Control Room</span>
-    </div>
-    <div class="cellguard-subtitle">
-        SEE THE DEFECT • EXPLAIN THE CAUSE • PREDICT THE RISK • PREVENT THE NEXT FAILURE
+<div class="cellguard-hero-container">
+    <div class="cellguard-hero-header">
+        <div>
+            <div class="cellguard-hero-title">
+                ⚡ CELLGUARD <span style="font-size:16px; color:#94A3B8; font-weight:600;">| AI QUALITY CONTROL ROOM</span>
+            </div>
+            <div class="cellguard-hero-tagline">
+                AUTOMOTIVE BATTERY WELDING • REAL-TIME QUALITY INTELLIGENCE ENGINE
+            </div>
+        </div>
+        <div class="live-badge-glow">
+            <span class="live-dot-pulse"></span>
+            <span>LIVE MANUFACTURING TELEMETRY</span>
+        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
