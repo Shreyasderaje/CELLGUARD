@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import PlaceholderPage from './pages/PlaceholderPage'
+import VisualInspection from './pages/VisualInspection'
+import RootCauseIntelligence from './pages/RootCauseIntelligence'
+import RiskPrediction from './pages/RiskPrediction'
+import QualityTimeMachine from './pages/QualityTimeMachine'
+import WhatIfSimulator from './pages/WhatIfSimulator'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Activity, Cpu, Factory, Search, ShieldAlert } from 'lucide-react'
 import { fetchTelemetrySummary } from './api/telemetry'
@@ -56,7 +61,7 @@ function App() {
     return () => controller.abort()
   }, [])
 
-  return <div className="app-shell"><Sidebar activePage={activePage} setActivePage={setActivePage} open={menuOpen} onClose={() => setMenuOpen(false)} apiStatus={telemetry.status} /><main className="main-area"><Header activePage={activePage} onMenu={() => setMenuOpen(true)} apiStatus={telemetry.status} /><div className="content-scroll"><AnimatePresence mode="wait">{activePage === 'Command Center' ? <CommandCenter key="Command Center" telemetry={telemetry} /> : <PlaceholderPage page={activePage} key={activePage} />}</AnimatePresence></div></main></div>
+  return <div className="app-shell"><Sidebar activePage={activePage} setActivePage={setActivePage} open={menuOpen} onClose={() => setMenuOpen(false)} apiStatus={telemetry.status} /><main className="main-area"><Header activePage={activePage} onMenu={() => setMenuOpen(true)} apiStatus={telemetry.status} /><div className="content-scroll"><AnimatePresence mode="wait">{activePage === 'Command Center' ? <CommandCenter key="Command Center" telemetry={telemetry} /> : activePage === 'Visual Inspection' ? <VisualInspection key="Visual Inspection" /> : activePage === 'Root Cause Intelligence' ? <RootCauseIntelligence key="Root Cause Intelligence" /> : activePage === 'Risk Prediction' ? <RiskPrediction key="Risk Prediction" /> : activePage === 'Quality Time Machine' ? <QualityTimeMachine key="Quality Time Machine" /> : activePage === 'What-If Simulator' ? <WhatIfSimulator key="What-If Simulator" /> : <PlaceholderPage page={activePage} key={activePage} />}</AnimatePresence></div></main></div>
 }
 
 export default App
