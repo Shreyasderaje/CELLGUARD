@@ -35,12 +35,24 @@ YOLO_MODEL_PATH = (
     / "runs" / "detect" / "models" / "defect_detector"
     / "cellguard_yolo-3" / "weights" / "best.pt"
 )
-DATASET_VALID_IMAGES = Path(__file__).resolve().parents[1] / "data" / "raw" / "weld_defect" / "valid" / "images"
-DATASET_VALID_LABELS = Path(__file__).resolve().parents[1] / "data" / "raw" / "weld_defect" / "valid" / "labels"
-DATASET_ROOT = Path(__file__).resolve().parents[1] / "data" / "raw" / "weld_defect"
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+LOCAL_DATASET_ROOT = PROJECT_ROOT / "data" / "raw" / "weld_defect"
+DEPLOYMENT_DATASET_ROOT = PROJECT_ROOT / "deployment_sample"
+
+# Prefer the full local dataset when available; otherwise use the deployment sample.
+DATASET_ROOT = (
+    LOCAL_DATASET_ROOT
+    if (LOCAL_DATASET_ROOT / "valid" / "images").is_dir()
+    else DEPLOYMENT_DATASET_ROOT
+)
+
+DATASET_VALID_IMAGES = DATASET_ROOT / "valid" / "images"
+DATASET_VALID_LABELS = DATASET_ROOT / "valid" / "labels"
 DATASET_CONFIG = DATASET_ROOT / "data.yaml"
 DATASET_SPLITS = ("train", "valid", "test")
 DATASET_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+
 
 
 class RootCauseRequest(BaseModel):
